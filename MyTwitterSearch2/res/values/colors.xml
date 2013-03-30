@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="tweet_header_background">#CCCCCC</color>
+    <color name="green">#00FF00</color>
+    <color name="blue">#0000FF</color>
+    <color name="list_focused">#36C170</color>
+    <color name="list_selected">#9EC136</color>
+</resources>
