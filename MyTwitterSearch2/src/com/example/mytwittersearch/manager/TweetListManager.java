@@ -1,4 +1,4 @@
-package com.example.mytwittersearch.model;
+package com.example.mytwittersearch.manager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,16 +8,18 @@ import java.util.Map;
 import android.content.ContentValues;
 import android.graphics.drawable.Drawable;
 
+import com.example.mytwittersearch.model.Tweet;
+
 public class TweetListManager {
-	private static TweetListManager instance = null;
+	private static TweetListManager kInstance = null;
 	private List<Tweet> mTweetList = null;
 	private Map<String, Drawable> mImageCache = null;
 
 	public static TweetListManager getInstance() {
-		if (instance == null) {
-			instance = new TweetListManager();
+		if (kInstance == null) {
+			kInstance = new TweetListManager();
 		}
-		return instance;
+		return kInstance;
 	}
 
 	private TweetListManager() {
@@ -46,6 +48,7 @@ public class TweetListManager {
 
 	public void clear() {
 		mTweetList.clear();
+		mImageCache.clear();
 	}
 	
 	public void addImage(String url, Drawable image) {

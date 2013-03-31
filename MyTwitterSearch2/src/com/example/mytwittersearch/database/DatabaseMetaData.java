@@ -14,6 +14,7 @@ public class DatabaseMetaData {
 		
 		// Table columns matches JSON attributes from search.twitter.com
 		public static interface Columns {
+			public static final String HASHCODE = "hashcode";
 			public static final String FROM_USER = "from_user";
 			public static final String CREATED_AT = "created_at";
 			public static final String IMAGE_URL = "profile_image_url";

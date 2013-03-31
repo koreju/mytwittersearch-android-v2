@@ -64,8 +64,10 @@ public final class R {
         public static final int action_settings=0x7f06000b;
         public static final int app_name=0x7f060000;
         public static final int author_photo=0x7f060006;
+        public static final int authorities=0x7f06000d;
         public static final int button_content_desp=0x7f060003;
         public static final int created_at=0x7f060008;
+        public static final int download_service=0x7f06000e;
         public static final int hello_world=0x7f06000c;
         public static final int input_hint=0x7f060002;
         public static final int menu_about=0x7f060005;

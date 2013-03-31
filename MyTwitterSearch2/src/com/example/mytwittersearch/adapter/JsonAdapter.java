@@ -17,7 +17,7 @@ public class JsonAdapter extends CursorAdapter {
 	private LayoutInflater mInflater = null;
 
 	public JsonAdapter(Context context, Cursor cursor) {
-		super(context, cursor);
+		super(context, cursor, 0);
 		mInflater = LayoutInflater.from(context);
 	}
 	

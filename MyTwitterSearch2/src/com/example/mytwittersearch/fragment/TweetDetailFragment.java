@@ -14,8 +14,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.mytwittersearch.R;
+import com.example.mytwittersearch.manager.TweetListManager;
 import com.example.mytwittersearch.model.Tweet;
-import com.example.mytwittersearch.model.TweetListManager;
 
 public class TweetDetailFragment extends Fragment {
 	// Pattern for matching from_user

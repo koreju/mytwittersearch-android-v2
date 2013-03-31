@@ -1,17 +1,15 @@
 package com.example.mytwittersearch.fragment;
 
-import java.util.concurrent.TimeUnit;
-
+import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.ContentResolver;
 import android.content.Context;
-import android.database.ContentObserver;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -24,16 +22,18 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.mytwittersearch.R;
 import com.example.mytwittersearch.adapter.JsonAdapter;
 import com.example.mytwittersearch.database.DatabaseMetaData;
-import com.example.mytwittersearch.operation.DownloadTask;
+import com.example.mytwittersearch.manager.TweetFragmentManager;
+import com.example.mytwittersearch.manager.TweetListManager;
+import com.example.mytwittersearch.model.Tweet;
+import com.example.mytwittersearch.operation.DownloadTask.OnDownloadFinishedListener;
 import com.example.mytwittersearch.utils.ConstantValues;
 
 public class TweetListFragment extends ListFragment implements
-		LoaderManager.LoaderCallbacks<Cursor> {
+		LoaderManager.LoaderCallbacks<Cursor>, OnDownloadFinishedListener {
 
 	private EditText mKeywordText = null;
 	private ImageButton mSearchBtn = null;
@@ -42,14 +42,14 @@ public class TweetListFragment extends ListFragment implements
 
 	private JsonAdapter mJsonAdapter = null;
 
-	private ContentResolver mContentResolver = null;
-	private Cursor mCursor = null;
+	private CursorLoader mCursorLoader = null;
 	private OnTweetSelectedListener mTweetSelectedListener = null;
+	private Intent mIntent = null;
 
 	public interface OnTweetSelectedListener {
 		public void onTweetSelected(int position);
 	}
-	
+
 	private OnClickListener mSearchHandler = new OnClickListener() {
 		@Override
 		public void onClick(View v) {
@@ -86,13 +86,13 @@ public class TweetListFragment extends ListFragment implements
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 	}
-	
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		return inflater.inflate(R.layout.tweet_list, container, false);
 	}
-	
+
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
@@ -113,6 +113,12 @@ public class TweetListFragment extends ListFragment implements
 	}
 
 	@Override
+	public void onDestroy() {
+		stopBackgroundDownloadService();
+		super.onDestroy();
+	}
+
+	@Override
 	public void onListItemClick(ListView listView, View view, int position,
 			long id) {
 		super.onListItemClick(listView, view, position, id);
@@ -120,21 +126,51 @@ public class TweetListFragment extends ListFragment implements
 		getListView().setItemChecked(position, true);
 	}
 
+	@SuppressLint("NewApi")
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-		return null;
+		mCursorLoader = new CursorLoader(getActivity().getApplicationContext(),
+				DatabaseMetaData.TweetTableMetaData.CONTENT_URI, null, null,
+				null, DatabaseMetaData.TweetTableMetaData.Columns.CREATED_AT
+						+ " DESC");
+		return mCursorLoader;
 	}
 
 	@Override
 	public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+		TweetListManager.getInstance().clear();
+		while (cursor.moveToNext()) {
+			Tweet tweet = new Tweet(
+					cursor.getString(cursor
+							.getColumnIndex(DatabaseMetaData.TweetTableMetaData.Columns.FROM_USER)),
+					cursor.getString(cursor
+							.getColumnIndex(DatabaseMetaData.TweetTableMetaData.Columns.CREATED_AT)),
+					cursor.getString(cursor
+							.getColumnIndex(DatabaseMetaData.TweetTableMetaData.Columns.IMAGE_URL)),
+					cursor.getString(cursor
+							.getColumnIndex(DatabaseMetaData.TweetTableMetaData.Columns.TEXT)));
+			TweetListManager.getInstance().add(tweet);
+		}
 		mJsonAdapter.swapCursor(cursor);
+		mTweetHeader.setText(cursor.getCount() + " tweets");
 	}
 
 	@Override
-	public void onLoaderReset(Loader<Cursor> arg0) {
+	public void onLoaderReset(Loader<Cursor> loader) {
 		mJsonAdapter.swapCursor(null);
+		TweetListManager.getInstance().clear();
 	}
-	
+
+	@Override
+	public void onDownloadFinished() {
+		if (getLoaderManager().getLoader(ConstantValues.LOADER_ID) == null) {
+			getLoaderManager().initLoader(ConstantValues.LOADER_ID, null, this);
+		} else {
+			getLoaderManager().restartLoader(ConstantValues.LOADER_ID, null,
+					this);
+		}
+	}
+
 	private void initialize() {
 		mKeywordText = (EditText) getActivity().findViewById(R.id.search_key);
 		mSearchBtn = (ImageButton) getActivity().findViewById(R.id.btn_search);
@@ -143,54 +179,34 @@ public class TweetListFragment extends ListFragment implements
 		mKeywordText.setOnKeyListener(mEnterKeyHandler);
 		mSearchBtn.setOnClickListener(mSearchHandler);
 
-		mInputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+		mInputMethodManager = (InputMethodManager) getActivity()
+				.getSystemService(Context.INPUT_METHOD_SERVICE);
 
-		mJsonAdapter = new JsonAdapter(getActivity(), mCursor);
+		mJsonAdapter = new JsonAdapter(getActivity(), null);
 		setListAdapter(mJsonAdapter);
-
-		getLoaderManager().initLoader(0, null, this);
-		mContentResolver = getActivity().getContentResolver();
-		mContentResolver.registerContentObserver(
-				Uri.parse("content://" + DatabaseMetaData.AUTHORITY), true,
-				new TweetObserver(new Handler()));
+		TweetFragmentManager.getInstance().setFragment(this);
 	}
 
 	private void onSearchStart() {
 		// Hide the soft keyboard
 		mInputMethodManager.hideSoftInputFromWindow(
 				mKeywordText.getWindowToken(), 0);
-		DownloadTask downloadTask = new DownloadTask(mContentResolver);
-		downloadTask.execute("?rpp=50&q="
-				+ Uri.encode(mKeywordText.getText().toString()));
-		try {
-			downloadTask.get(ConstantValues.TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (Exception e) {
-			downloadTask.cancel(true);
-			alert("Cannot retrieve tweets...");
-		}
-		Toast.makeText(getActivity().getApplicationContext(), mKeywordText.getText(),
-				Toast.LENGTH_LONG).show();
+		String searchUrl = "?rpp=" + ConstantValues.NUM_TWEETS_PER_FETCH
+				+ "&q=" + Uri.encode(mKeywordText.getText().toString());
+		stopBackgroundDownloadService();
+		startBackgroundDownloadService(searchUrl);
 	}
 
-	private void alert(String message) {
-		Toast.makeText(getActivity().getApplicationContext(), message, Toast.LENGTH_LONG)
-				.show();
+	private void startBackgroundDownloadService(String searchUrl) {
+		mIntent = new Intent();
+		mIntent.setAction(getResources().getString(R.string.download_service));
+		mIntent.putExtra(ConstantValues.SEARCH_URL, searchUrl);
+		getActivity().startService(mIntent);
 	}
 
-	private final class TweetObserver extends ContentObserver {
-
-		public TweetObserver(Handler handler) {
-			super(handler);
-		}
-
-		@Override
-		public void onChange(boolean selfChange) {
-			super.onChange(selfChange);
-			mCursor = mContentResolver.query(
-					DatabaseMetaData.TweetTableMetaData.CONTENT_URI, null,
-					null, null, null);
-			mTweetHeader.setText(mCursor.getCount() + " tweets");
-			mJsonAdapter.swapCursor(mCursor);
+	private void stopBackgroundDownloadService() {
+		if (mIntent != null) {
+			getActivity().stopService(mIntent);
 		}
 	}
 }

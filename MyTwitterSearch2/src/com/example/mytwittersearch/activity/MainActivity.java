@@ -1,6 +1,8 @@
 package com.example.mytwittersearch.activity;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.view.Menu;
@@ -15,11 +17,14 @@ import com.example.mytwittersearch.fragment.TweetListFragment.OnTweetSelectedLis
 public class MainActivity extends FragmentActivity implements
 		OnTweetSelectedListener {
 	
+	private static final boolean DEVELOPER_MODE = true; 
+	
 	private static final int MENU_EXIT_ID = Menu.FIRST;
 	private static final int MENU_ABOUT_ID = MENU_EXIT_ID + 1;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		setupStrictMode();
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.tweet_container);
 
@@ -104,5 +109,23 @@ public class MainActivity extends FragmentActivity implements
 			// Commit the transaction
 			transaction.commit();
 		}
+	}
+	
+	@SuppressLint("NewApi")
+	private void setupStrictMode() {
+	     if (DEVELOPER_MODE) {
+	         StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+	                 .detectDiskReads()
+	                 .detectDiskWrites()
+	                 .detectNetwork()   // or .detectAll() for all detectable problems
+	                 .penaltyLog()
+	                 .build());
+	         StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+	                 .detectLeakedSqlLiteObjects()
+	                 .detectLeakedClosableObjects()
+	                 .penaltyLog()
+	                 .penaltyDeath()
+	                 .build());
+	     }
 	}
 }

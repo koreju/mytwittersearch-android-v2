@@ -4,12 +4,16 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import com.example.mytwittersearch.utils.ConstantValues;
+
 public class DatabaseHelper extends SQLiteOpenHelper {
 
 	private static final String SQL_TWEETS_CREATE = "CREATE TABLE "
 			+ DatabaseMetaData.TweetTableMetaData.TABLE_NAME + " ( "
 			+ DatabaseMetaData.TweetTableMetaData._ID
 			+ " INTEGER PRIMARY KEY, "
+			+ DatabaseMetaData.TweetTableMetaData.Columns.HASHCODE
+			+ " INTEGER UNIQUE NOT NULL, "
 			+ DatabaseMetaData.TweetTableMetaData.Columns.FROM_USER
 			+ " VAR(50) NOT NULL, "
 			+ DatabaseMetaData.TweetTableMetaData.Columns.CREATED_AT
@@ -19,6 +23,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			+ " TEXT NOT NULL " + " ) ";
 	private static final String SQL_TWEETS_DROP = "DROP TABLE IF EXISTS "
 			+ DatabaseMetaData.TweetTableMetaData.TABLE_NAME;
+
+	private static final String SQL_REMOVE_OLD_DATA = "DELETE FROM "
+			+ DatabaseMetaData.TweetTableMetaData.TABLE_NAME + " WHERE "
+			+ DatabaseMetaData.TweetTableMetaData._ID + " NOT IN (SELECT "
+			+ DatabaseMetaData.TweetTableMetaData._ID + " FROM "
+			+ DatabaseMetaData.TweetTableMetaData.TABLE_NAME + " ORDER BY "
+			+ DatabaseMetaData.TweetTableMetaData.Columns.CREATED_AT
+			+ " DESC LIMIT " + ConstantValues.MAX_NUM_CACHED_TWEETS + ")";
 
 	public DatabaseHelper(Context context) {
 		super(context, DatabaseMetaData.DATABASE_NAME, null,
@@ -34,5 +46,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		db.execSQL(SQL_TWEETS_DROP);
 		onCreate(db);
+	}
+
+	public void removeOldData(SQLiteDatabase db) {
+		db.execSQL(SQL_REMOVE_OLD_DATA);
 	}
 }

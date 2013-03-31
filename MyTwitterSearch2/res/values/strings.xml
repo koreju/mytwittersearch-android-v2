@@ -14,5 +14,7 @@
     <string name="title_activity_tweet">Tweet</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
+    <string name="authorities">com.example.mytwittersearch.tweetcontentprovider</string>
+    <string name="download_service">com.example.mytwittersearch.service.BackgroundDownloadService</string>
 
 </resources>

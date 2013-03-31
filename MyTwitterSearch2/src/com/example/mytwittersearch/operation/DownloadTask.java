@@ -7,18 +7,23 @@ import android.util.Log;
 
 import com.example.mytwittersearch.database.DatabaseMetaData;
 import com.example.mytwittersearch.json.JsonParser;
-import com.example.mytwittersearch.model.TweetListManager;
+import com.example.mytwittersearch.manager.TweetFragmentManager;
+import com.example.mytwittersearch.manager.TweetListManager;
 import com.example.mytwittersearch.network.NetworkRequestExecutor;
 import com.example.mytwittersearch.network.NetworkRequestExecutor.DownloadException;
 import com.example.mytwittersearch.utils.ConstantValues;
 
-public class DownloadTask extends AsyncTask<String, Integer, String> {
+public class DownloadTask extends AsyncTask<String, Void, String> {
 
-	private ContentResolver mContentResolver = null;
+	public interface OnDownloadFinishedListener {
+		public void onDownloadFinished();
+	}
 
-	public DownloadTask(ContentResolver contentResolver) {
+	private boolean mIsNewDownload = false;
+
+	public DownloadTask(boolean isNewDownload) {
 		super();
-		mContentResolver = contentResolver;
+		mIsNewDownload = isNewDownload;
 	}
 
 	@Override
@@ -32,7 +37,7 @@ public class DownloadTask extends AsyncTask<String, Integer, String> {
 
 	@Override
 	protected void onPostExecute(String result) {
-		if (mContentResolver == null) {
+		if (TweetFragmentManager.getInstance().getFragment() == null) {
 			Log.e(ConstantValues.LOG_TAG,
 					"onPostExecute(): ContentResolver is null");
 			return;
@@ -44,17 +49,22 @@ public class DownloadTask extends AsyncTask<String, Integer, String> {
 			return;
 		}
 
-		// Insert into the database
+		// Load data into the tweet list
 		JsonParser.parseJson(result);
-		ContentValues[] values = TweetListManager.getInstance().toContentValues();
-		// Remove old data
-		mContentResolver.delete(
-				DatabaseMetaData.TweetTableMetaData.CONTENT_URI, null, null);
+		// Insert into the database
+		ContentValues[] values = TweetListManager.getInstance()
+				.toContentValues();
+		ContentResolver contentResolver = TweetFragmentManager.getInstance()
+				.getFragment().getActivity().getContentResolver();
+		if (mIsNewDownload) {
+			// If it's a new search, clear the table
+			contentResolver
+					.delete(DatabaseMetaData.TweetTableMetaData.CONTENT_URI,
+							null, null);
+		}
 		// Insert new data
-		mContentResolver.bulkInsert(
+		contentResolver.bulkInsert(
 				DatabaseMetaData.TweetTableMetaData.CONTENT_URI, values);
-		// Notify data change
-		mContentResolver.notifyChange(
-				DatabaseMetaData.TweetTableMetaData.CONTENT_URI, null);
+		TweetFragmentManager.getInstance().getFragment().onDownloadFinished();
 	}
 }

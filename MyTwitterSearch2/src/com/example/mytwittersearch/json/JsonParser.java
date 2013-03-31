@@ -7,8 +7,8 @@ import org.json.JSONObject;
 import android.util.Log;
 
 import com.example.mytwittersearch.database.DatabaseMetaData;
+import com.example.mytwittersearch.manager.TweetListManager;
 import com.example.mytwittersearch.model.Tweet;
-import com.example.mytwittersearch.model.TweetListManager;
 import com.example.mytwittersearch.utils.ConstantValues;
 
 public class JsonParser {
@@ -19,6 +19,7 @@ public class JsonParser {
 			obj = new JSONObject(json);
 			JSONArray results = obj.getJSONArray("results");
 			if (results != null && results.length() > 0) {
+				TweetListManager.getInstance().clear();
 				for (int i = 0; i < results.length(); ++i) {
 					JSONObject entry = results.getJSONObject(i);
 					Tweet tweet = new Tweet(

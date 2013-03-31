@@ -24,6 +24,9 @@ public class Tweet {
 
 	public ContentValues toContentValues() {
 		ContentValues values = new ContentValues();
+		String hashString = getFromUser() + getCreatedAt();
+		values.put(DatabaseMetaData.TweetTableMetaData.Columns.HASHCODE,
+				hashString.hashCode());
 		values.put(DatabaseMetaData.TweetTableMetaData.Columns.FROM_USER,
 				getFromUser());
 		values.put(DatabaseMetaData.TweetTableMetaData.Columns.CREATED_AT,
@@ -78,7 +81,7 @@ public class Tweet {
 	public void setmImageUrl(String imageUrl) {
 		mImageUrl = imageUrl;
 	}
-	
+
 	/**
 	 * @return the mText
 	 */

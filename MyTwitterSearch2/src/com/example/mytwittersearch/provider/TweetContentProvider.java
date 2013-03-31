@@ -1,8 +1,5 @@
 package com.example.mytwittersearch.provider;
 
-import com.example.mytwittersearch.database.DatabaseHelper;
-import com.example.mytwittersearch.database.DatabaseMetaData;
-
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -12,10 +9,14 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.net.Uri.Builder;
 
+import com.example.mytwittersearch.database.DatabaseHelper;
+import com.example.mytwittersearch.database.DatabaseMetaData;
+
 public class TweetContentProvider extends ContentProvider {
 	public static final class Segment {
 		public static final int GET_TWEET_LIST = 1;
 		public static final int GET_TWEET_ITEM = 2;
+		public static final int DELETE_OUTDATED_ITEM = 3;
 	}
 
 	private static UriMatcher mUriMatcher = null;
@@ -129,6 +130,7 @@ public class TweetContentProvider extends ContentProvider {
 
 		switch (mUriMatcher.match(uri)) {
 		case Segment.GET_TWEET_LIST:
+			mDatabaseHelper.removeOldData(db);
 			cursor = db
 					.query(DatabaseMetaData.TweetTableMetaData.TABLE_NAME,
 							projection, selection, selectionArgs, null, null,
@@ -169,6 +171,5 @@ public class TweetContentProvider extends ContentProvider {
 					+ uri);
 		}
 		return result;
-	}
-
+	}	
 }

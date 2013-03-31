@@ -10,7 +10,7 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.ImageView;
 
-import com.example.mytwittersearch.model.TweetListManager;
+import com.example.mytwittersearch.manager.TweetListManager;
 import com.example.mytwittersearch.utils.ConstantValues;
 
 public class DownloadImageTask {
